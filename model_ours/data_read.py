@@ -56,7 +56,7 @@ class data_loader_MSCOCO():
     label_v=[]
     template_all=[]
     for i in range(batch_size):
-     
+
       img_name=self.img_path[self.start].split('/')[-1]
 
       self.start=self.start+1
@@ -81,7 +81,7 @@ class data_loader_MSCOCO():
       label_v.append(v_list)
       template_all.append(template_img)
 
-      
+
 
     return np.asarray(input_all).astype(np.float32),np.asarray(label_u).astype(np.float32),np.asarray(label_v).astype(np.float32),np.asarray(template_all).astype(np.float32)
 
@@ -122,7 +122,7 @@ class data_loader_GoogleMap():
     label_v=[]
     template_all=[]
     for i in range(batch_size):
-     
+
       img_name=self.img_path[self.start].split('/')[-1]
 
       self.start=self.start+1
@@ -140,7 +140,7 @@ class data_loader_GoogleMap():
 
       with open(self.label_path+img_name[:(len(img_name)-4)]+'_label.txt', 'r') as outfile:
           data = json.load(outfile)
-         
+
       u_list=[data['location'][0]['top_left_u'],data['location'][1]['top_right_u'],data['location'][3]['bottom_right_u'],data['location'][2]['bottom_left_u']]
       v_list=[data['location'][0]['top_left_v'],data['location'][1]['top_right_v'],data['location'][3]['bottom_right_v'],data['location'][2]['bottom_left_v']]
 
@@ -149,7 +149,7 @@ class data_loader_GoogleMap():
       label_v.append(v_list)
       template_all.append(template_img)
 
-      
+
 
     return np.asarray(input_all).astype(np.float32),np.asarray(label_u).astype(np.float32),np.asarray(label_v).astype(np.float32),np.asarray(template_all).astype(np.float32)
 
@@ -171,7 +171,7 @@ class data_loader_GoogleEarth():
 
     else:
       print ("no data load")
-    
+
     print (len(self.img_path))
     self.start=0
 
@@ -183,7 +183,7 @@ class data_loader_GoogleEarth():
     label_v=[]
     template_all=[]
     for i in range(batch_size):
-     
+
       img_name=self.img_path[self.start].split('/')[-1]
 
 
@@ -209,7 +209,67 @@ class data_loader_GoogleEarth():
       label_v.append(v_list)
       template_all.append(template_img)
 
-      
+
+
+    return np.asarray(input_all).astype(np.float32),np.asarray(label_u).astype(np.float32),np.asarray(label_v).astype(np.float32),np.asarray(template_all).astype(np.float32)
+
+class data_loader_Akagi():
+
+  def __init__(self,dataset_name='train'):
+    if dataset_name=='train':
+      self.img_path=glob.glob('../Dataset/AkagiFlight/train2018_input/*')
+      self.input_path='../Dataset/AkagiFlight/train2018_input/'
+      self.label_path='../Dataset/AkagiFlight/train2018_label/'
+      self.template_path='../Dataset/AkagiFlight/train2018_template/'
+      random.shuffle(self.img_path)
+
+    elif dataset_name=='val':
+      self.img_path=glob.glob('../Dataset/AkagiFlight/val2018_input/*')
+      self.input_path='../Dataset/AkagiFlight/val2018_input/'
+      self.label_path='../Dataset/AkagiFlight/val2018_label/'
+      self.template_path='../Dataset/AkagiFlight/val2018_template/'
+
+    else:
+      print ("no data load")
+
+    print (len(self.img_path))
+    self.start=0
+
+
+
+  def data_read_batch(self,batch_size=8):
+    input_all=[]
+    label_u=[]
+    label_v=[]
+    template_all=[]
+    for i in range(batch_size):
+
+      img_name=self.img_path[self.start].split('/')[-1]
+
+
+      self.start=self.start+1
+      if self.start>(len(self.img_path)-1):
+        input_all=[0]
+        label_u=[1]
+        label_v=[2]
+        template_all=[3]
+        break
+
+      input_img=plt.imread(self.input_path+img_name)/255.0
+      template_img=plt.imread(self.template_path+img_name)/255.0
+
+
+      with open(self.label_path+img_name[:(len(img_name)-4)]+'_label.txt', 'r') as outfile:
+        data = json.load(outfile)
+      u_list=[data['location'][0]['top_left_u'],data['location'][1]['top_right_u'],data['location'][3]['bottom_right_u'],data['location'][2]['bottom_left_u']]
+      v_list=[data['location'][0]['top_left_v'],data['location'][1]['top_right_v'],data['location'][3]['bottom_right_v'],data['location'][2]['bottom_left_v']]
+
+      input_all.append(input_img)
+      label_u.append(u_list)
+      label_v.append(v_list)
+      template_all.append(template_img)
+
+
 
     return np.asarray(input_all).astype(np.float32),np.asarray(label_u).astype(np.float32),np.asarray(label_v).astype(np.float32),np.asarray(template_all).astype(np.float32)
 
@@ -249,7 +309,7 @@ class data_loader_DayNight():
     label_v=[]
     template_all=[]
     for i in range(batch_size):
-     
+
       img_name=self.img_path[self.start].split('/')[-1]
 
       self.start=self.start+1
@@ -275,7 +335,7 @@ class data_loader_DayNight():
       label_v.append(v_list)
       template_all.append(template_img)
 
-      
+
 
     return np.asarray(input_all).astype(np.float32),np.asarray(label_u).astype(np.float32),np.asarray(label_v).astype(np.float32),np.asarray(template_all).astype(np.float32)
 
@@ -363,7 +423,7 @@ def generate_samples(index,satellite_img_list,cropped_img_in_original_HRO_list,l
   img_4=resize(cropped_img_in_original_HRO,(new_height,new_width))
 
   return img_1,img_2,img_3,img_4
-  
+
 
 
 def generate_samples_for_evaluate(index,satellite_img_list,cropped_img_in_original_HRO_list,label_list,simulated_drone_img_list):
@@ -407,7 +467,7 @@ def generate_samples_for_evaluate(index,satellite_img_list,cropped_img_in_origin
   img_4=resize(cropped_img_in_original_HRO,(new_height,new_width))
 
   return img_1,img_2,img_3,img_4,u_list-u_min,v_list-v_min
-  
+
 
 
 
@@ -423,9 +483,9 @@ class data_loader_remote_sensing():
       random.shuffle(self.total_list)
       self.start_index=0
 
-      
 
-      
+
+
 
   def load_path(self):
 
@@ -442,7 +502,7 @@ class data_loader_remote_sensing():
           label_list.append(path_list[0]+'/'+path_list[1]+'/'+path_list[2]+'/'+path_list[3]+'/'+path_list[4]+'/'+path_list[5]+'/'+'label.txt')
 
       return satellite_img_list,cropped_img_in_original_HRO_list,label_list,simulated_drone_img_list
-      
+
 
   def data_read_batch(self,batch_size):
 
@@ -454,10 +514,10 @@ class data_loader_remote_sensing():
     for i in range(batch_size):
       index=self.start_index
       self.start_index=self.start_index+1
-      
+
       if self.start_index>(self.total_sample-1):
         return [0],[1],[2],[3]
-      
+
       satellite_img=plt.imread(self.satellite_img_list[index])
       cropped_img_in_original_HRO=plt.imread(self.cropped_img_in_original_HRO_list[index])
       simulated_drone_img=plt.imread(self.simulated_drone_img_list[index])
@@ -483,13 +543,13 @@ class data_loader_remote_sensing():
       new_height=v_max-v_min
       new_width=u_max-u_min
 
-      
+
 
       img_3=resize(simulated_drone_img,(self.template_size,self.template_size))
 
       img_1=resize(img_1,(self.input_size,self.input_size))
 
-      
+
 
 
       img_input_list.append(img_1[:,:,:3]*2.0-1.0)
@@ -497,7 +557,7 @@ class data_loader_remote_sensing():
       img_v_list.append((v_list-v_min)/float(new_height)*self.input_size)
       img_template_list.append(img_3[:,:,:3]*2.0-1.0)
     return np.asarray(img_input_list).astype(np.float32),np.asarray(img_u_list).astype(np.float32),np.asarray(img_v_list).astype(np.float32),np.asarray(img_template_list).astype(np.float32)
-      
+
 class data_loader_remote_sensing_new():
   def __init__(self,dataset_name='train'):
 
@@ -510,9 +570,9 @@ class data_loader_remote_sensing_new():
       print (self.total_sample)
       self.start_index=0
 
-      
 
-      
+
+
 
   def load_path(self):
 
@@ -528,10 +588,10 @@ class data_loader_remote_sensing_new():
           label_u_list.append('./prepared_img_remote_sensing/'+self.dataset_name+'/label/'+path_list[:(len(path_list)-4)]+'u_list_gt.txt')
 
           label_v_list.append('./prepared_img_remote_sensing/'+self.dataset_name+'/label/'+path_list[:(len(path_list)-4)]+'v_list_gt.txt')
-          
+
 
       return input_img_list,label_u_list,label_v_list,template_img_list
-      
+
 
   def data_read_batch(self,batch_size):
 
@@ -543,13 +603,13 @@ class data_loader_remote_sensing_new():
     for i in range(batch_size):
       index=self.start_index
       self.start_index=self.start_index+1
-      
+
       if self.start_index>(self.total_sample-1):
         return [0],[1],[2],[3]
-      
+
       input_img=plt.imread(self.input_img_list[index])/255.0
       template_img=plt.imread(self.template_img_list[index])/255.0
-      
+
       u_list=[]
       v_list=[]
 
@@ -585,9 +645,9 @@ class data_loader_remote_sensing_to_north():
       random.shuffle(self.total_list)
       self.start_index=0
 
-      
 
-      
+
+
 
   def load_path(self):
 
@@ -616,10 +676,10 @@ class data_loader_remote_sensing_to_north():
     for i in range(batch_size):
       index=self.start_index
       self.start_index=self.start_index+1
-      
+
       if self.start_index>(self.total_sample-1):
         return [0],[1],[2],[3]
-      
+
       satellite_img=plt.imread(self.satellite_img_list[index])
       #cropped_img_in_original_HRO=plt.imread(self.cropped_img_in_original_HRO_list[index])
       simulated_drone_img=plt.imread(self.simulated_drone_img_list[index])
@@ -629,7 +689,7 @@ class data_loader_remote_sensing_to_north():
 
       with open(self.label_list[index]) as json_file:
           data = json.load(json_file)
-          
+
           for p in data['pixel_location']:
               #{'top_left_u': 1017, 'top_left_v': 980}
               #{'top_right_u': 799, 'top_right_v': 854}
@@ -649,13 +709,13 @@ class data_loader_remote_sensing_to_north():
       new_height=v_max-v_min
       new_width=u_max-u_min
 
-      
+
 
       img_3=resize(simulated_drone_img,(self.template_size,self.template_size))
 
       img_1=resize(img_1,(self.input_size,self.input_size))
 
-      
+
 
 
       img_input_list.append(img_1[:,:,:3]*2.0-1.0)
@@ -663,9 +723,9 @@ class data_loader_remote_sensing_to_north():
       img_v_list.append((v_list-v_min)/float(new_height)*self.input_size)
       img_template_list.append(img_3[:,:,:3]*2.0-1.0)
     return np.asarray(img_input_list).astype(np.float32),np.asarray(img_u_list).astype(np.float32),np.asarray(img_v_list).astype(np.float32),np.asarray(img_template_list).astype(np.float32)
-      
 
-     
+
+
 class data_loader_remote_sensing_to_north_new():
   def __init__(self,dataset_name='train'):
 
@@ -678,9 +738,9 @@ class data_loader_remote_sensing_to_north_new():
       print (self.total_sample)
       self.start_index=0
 
-      
 
-      
+
+
 
   def load_path(self):
 
@@ -696,10 +756,10 @@ class data_loader_remote_sensing_to_north_new():
           label_u_list.append('./prepared_img_remote_sensing_no_rotation/'+self.dataset_name+'/label/'+path_list[:(len(path_list)-4)]+'u_list_gt.txt')
 
           label_v_list.append('./prepared_img_remote_sensing_no_rotation/'+self.dataset_name+'/label/'+path_list[:(len(path_list)-4)]+'v_list_gt.txt')
-          
+
 
       return input_img_list,label_u_list,label_v_list,template_img_list
-      
+
 
   def data_read_batch(self,batch_size):
 
@@ -711,13 +771,13 @@ class data_loader_remote_sensing_to_north_new():
     for i in range(batch_size):
       index=self.start_index
       self.start_index=self.start_index+1
-      
+
       if self.start_index>(self.total_sample-1):
         return [0],[1],[2],[3]
-      
+
       input_img=plt.imread(self.input_img_list[index])/255.0
       template_img=plt.imread(self.template_img_list[index])/255.0
-      
+
       u_list=[]
       v_list=[]
 
@@ -738,4 +798,3 @@ class data_loader_remote_sensing_to_north_new():
       img_template_list.append(template_img*2.0-1.0)
 
     return np.asarray(img_input_list).astype(np.float32),np.asarray(img_u_list).astype(np.float32),np.asarray(img_v_list).astype(np.float32),np.asarray(img_template_list).astype(np.float32)
-
