@@ -50,7 +50,7 @@ if gpus:
   try:
     tf.config.experimental.set_virtual_device_configuration(
         gpus[0],
-        [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4000)])
+        [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3000)])
     logical_gpus = tf.config.experimental.list_logical_devices('GPU')
     print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
   except RuntimeError as e:
@@ -74,7 +74,7 @@ def construct_matrix_regression(batch_size,network_output,network_output_2=[0]):
         else:
             hh_matrix.append(np.linalg.inv(predicted_matrix[i,:,:]))
         #hh_matrix.append(predicted_matrix[i,:,:])
-    
+
     #return tf.linalg.inv(predicted_matrix+0.0001)
     return np.asarray(hh_matrix)
 
@@ -82,12 +82,12 @@ def initial_motion_COCO():
     # prepare source and target four points
     matrix_list=[]
     for i in range(1):
-       
+
         src_points=[[0,0],[127,0],[127,127],[0,127]]
 
         tgt_points=[[32,32],[160,32],[160,160],[32,160]]
 
-    
+
         src_points=np.reshape(src_points,[4,1,2])
         tgt_points=np.reshape(tgt_points,[4,1,2])
 
@@ -100,7 +100,7 @@ def initial_motion_COCO():
 def construct_matrix(initial_matrix,scale_factor,batch_size):
     #scale_factor size_now/(size to get matrix)
     initial_matrix=tf.cast(initial_matrix,dtype=tf.float32)
-    
+
     scale_matrix=np.eye(3)*scale_factor
     scale_matrix[2,2]=1.0
     scale_matrix=tf.cast(scale_matrix,dtype=tf.float32)
@@ -118,28 +118,28 @@ def construct_matrix(initial_matrix,scale_factor,batch_size):
 
 
 def average_cornner_error(batch_size,predicted_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127):
-    
+
     four_conner=[[top_left_u,top_left_v,1],[bottom_right_u,top_left_v,1],[bottom_right_u,bottom_right_v,1],[top_left_u,bottom_right_v,1]]
     four_conner=np.asarray(four_conner)
     four_conner=np.transpose(four_conner)
     four_conner=np.expand_dims(four_conner,axis=0)
     four_conner=np.tile(four_conner,[batch_size,1,1]).astype(np.float32)
-    
+
     new_four_points=tf.matmul(predicted_matrix,four_conner)
-    
+
     new_four_points_scale=new_four_points[:,2:,:]
     new_four_points= new_four_points/new_four_points_scale
-    
-    
+
+
     u_predict=new_four_points[:,0,:]
     v_predict=new_four_points[:,1,:]
-    
+
     average_conner=tf.reduce_mean(tf.sqrt(tf.math.pow(u_predict-u_list,2)+tf.math.pow(v_predict-v_list,2)))
 
-    
-    
+
+
     return average_conner
-    
+
 
 
 def compute_ssim(img_1,img_2):
@@ -151,7 +151,7 @@ def gt_motion_rs(u_list,v_list,batch_size=1):
     # prepare source and target four points
     matrix_list=[]
     for i in range(batch_size):
-       
+
         src_points=[[0,0],[127,0],[127,127],[0,127]]
 
         #tgt_points=[[32*2+1,32*2+1],[160*2+1,32*2+1],[160*2+1,160*2+1],[32*2+1,160*2+1]]
@@ -159,7 +159,7 @@ def gt_motion_rs(u_list,v_list,batch_size=1):
         tgt_points=np.concatenate([u_list[i:(i+1),:],v_list[i:(i+1),:]],axis=0)
         tgt_points=np.transpose(tgt_points)
         tgt_points=np.expand_dims(tgt_points,axis=1)
-       
+
         src_points=np.reshape(src_points,[4,1,2])
         tgt_points=np.reshape(tgt_points,[4,1,2])
 
@@ -173,7 +173,7 @@ def gt_motion_rs_random_noisy(u_list,v_list,batch_size,lambda_noisy):
     # prepare source and target four points
     matrix_list=[]
     for i in range(batch_size):
-       
+
         src_points=[[0,0],[127,0],[127,127],[0,127]]
 
         #tgt_points=[[32*2+1,32*2+1],[160*2+1,32*2+1],[160*2+1,160*2+1],[32*2+1,160*2+1]]
@@ -181,7 +181,7 @@ def gt_motion_rs_random_noisy(u_list,v_list,batch_size,lambda_noisy):
         tgt_points=np.concatenate([u_list[i:(i+1),:],v_list[i:(i+1),:]],axis=0)
         tgt_points=np.transpose(tgt_points)
         tgt_points=np.expand_dims(tgt_points,axis=1)
-       
+
         src_points=np.reshape(src_points,[4,1,2])
         tgt_points=np.reshape(tgt_points,[4,1,2])
 
@@ -190,9 +190,9 @@ def gt_motion_rs_random_noisy(u_list,v_list,batch_size,lambda_noisy):
         element_h_matrix=np.reshape(h_matrix,(9,1))
         noisy_matrix=np.zeros((9,1))
         for jj in range(8):
-            #if jj!=0 and jj!=4: 
-            noisy_matrix[jj,0]=element_h_matrix[jj,0]*lambda_noisy[jj]  
-        noisy_matrix=np.reshape(noisy_matrix,(3,3))    
+            #if jj!=0 and jj!=4:
+            noisy_matrix[jj,0]=element_h_matrix[jj,0]*lambda_noisy[jj]
+        noisy_matrix=np.reshape(noisy_matrix,(3,3))
         matrix_list.append(noisy_matrix)
     return np.asarray(matrix_list).astype(np.float32)
 
@@ -207,13 +207,13 @@ def calculate_feature_map(input_tensor):
     path_extracted=path_extracted-path_extracted_mean
     path_extracted_transpose=tf.transpose(path_extracted,(0,1,2,4,3))
     variance_matrix=tf.matmul(path_extracted_transpose,path_extracted)
-    
+
     tracevalue=tf.linalg.trace(variance_matrix)
     row_sum=tf.reduce_sum(variance_matrix,axis=-1)
     max_row_sum=tf.math.reduce_max(row_sum,axis=-1)
     min_row_sum=tf.math.reduce_min(row_sum,axis=-1)
     mimic_ratio=(max_row_sum+min_row_sum)/2.0/tracevalue
-    
+
     return  tf.expand_dims(mimic_ratio,axis=-1)
 
 
@@ -279,7 +279,7 @@ if input_parameters.initial_type=='multi_net':
     regression_network_two.load_weights(save_path_two + 'epoch_'+str(input_parameters.load_epoch_multinet[1]))
     regression_network_three=Net_third()
     regression_network_three.load_weights(save_path_three + 'epoch_'+str(input_parameters.load_epoch_multinet[2]))
-    
+
 
 
 
@@ -313,14 +313,14 @@ if input_parameters.dataset_name=='GoogleEarth':
 
 if input_parameters.dataset_name=='DayNight':
     data_loader_caller=data_loader_DayNight('val')
-        
+
 if input_parameters.if_LK:
     txt_name=input_parameters.feature_map_type+'_'+input_parameters.initial_type+'_'+input_parameters.dataset_name+".txt"
 else:
     txt_name=input_parameters.initial_type+'_'+input_parameters.dataset_name+".txt"
-#file = open("./"+txt_name,"w") 
-   
-total_error=0.0    
+#file = open("./"+txt_name,"w")
+
+total_error=0.0
 
 fk_loop=input_parameters.num_iters
 
@@ -329,7 +329,7 @@ inference_time_siamese=0.0
 inference_time_LK=0.0
 
 
-for iters in range(10000000):
+for iters in range(10):
     input_img,u_list,v_list,template_img=data_loader_caller.data_read_batch(batch_size=1)
     if len(np.shape(input_img))<2:
         break
@@ -346,7 +346,7 @@ for iters in range(10000000):
 
         cornner_error_l2=0.25*(np.sqrt((u_list[0]-32)**2+(v_list[0]-32)**2)+np.sqrt((u_list[1]-160)**2+(v_list[1]-32)**2)+np.sqrt((u_list[2]-160)**2+(v_list[2]-160)**2)+np.sqrt((u_list[3]-32)**2+(v_list[3]-160)**2))
         cornner_error_l1=0.25*(np.abs(u_list[0]-32)+np.abs(v_list[0]-32)+np.abs(u_list[1]-160)+np.abs(v_list[1]-32)+np.abs(u_list[2]-160)+np.abs(v_list[2]-160)+np.abs(u_list[3]-32)+np.abs(v_list[3]-160))
-        
+
         print (np.float(cornner_error_l1))
         print (np.float(cornner_error_l2))
         continue
@@ -355,8 +355,8 @@ for iters in range(10000000):
 
     if input_parameters.initial_type=='simple_net':
         input_img_grey=tf.image.rgb_to_grayscale(input_img)
-        template_img_new=tf.image.pad_to_bounding_box(template_img, 32, 32, 192, 192)  
-        template_img_grey=tf.image.rgb_to_grayscale(template_img_new)    
+        template_img_new=tf.image.pad_to_bounding_box(template_img, 32, 32, 192, 192)
+        template_img_grey=tf.image.rgb_to_grayscale(template_img_new)
         network_input=tf.concat([template_img_grey,input_img_grey],axis=-1)
         homography_vector=regression_network.call(network_input,training=False)
         extra=tf.ones((1,1))
@@ -367,7 +367,7 @@ for iters in range(10000000):
 
     if input_parameters.initial_type=='multi_net':
         input_img_grey=tf.image.rgb_to_grayscale(input_img)
-        template_img_new=tf.image.pad_to_bounding_box(template_img, 32, 32, 192, 192)  
+        template_img_new=tf.image.pad_to_bounding_box(template_img, 32, 32, 192, 192)
         template_img_grey=tf.image.rgb_to_grayscale(template_img_new)
         network_input=tf.concat([template_img_grey,input_img_grey],axis=-1)
         time_a=time.time()
@@ -377,12 +377,12 @@ for iters in range(10000000):
 
         matrix_one=construct_matrix_regression(1,homography_vector_one)
         template_img_new=LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), matrix_one)
-        template_img_grey=tf.image.rgb_to_grayscale(template_img_new) 
+        template_img_grey=tf.image.rgb_to_grayscale(template_img_new)
         network_input=tf.concat([template_img_grey,input_img_grey],axis=-1)
         homography_vector_two=regression_network_two.call(network_input,training=False)
         matrix_two=construct_matrix_regression(1,homography_vector_one,homography_vector_two)
         template_img_new=LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), matrix_two)
-        template_img_grey=tf.image.rgb_to_grayscale(template_img_new)  
+        template_img_grey=tf.image.rgb_to_grayscale(template_img_new)
         network_input=tf.concat([template_img_grey,input_img_grey],axis=-1)
         homography_vector_three=regression_network_three.call(network_input,training=False)
 
@@ -421,7 +421,7 @@ for iters in range(10000000):
         template_feature_map_three=template_feature_three
 
     elif input_parameters.feature_map_type=='special':
-                
+
         input_feature_map_one=calculate_feature_map(input_feature_one)
         template_feature_map_one=calculate_feature_map(template_feature_one)
 
@@ -501,11 +501,3 @@ for iters in range(10000000):
 
 
 #file.close()
-            
-            
-
-               
-
-
-
-
