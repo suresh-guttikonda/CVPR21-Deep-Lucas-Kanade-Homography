@@ -7,3 +7,5 @@ epoch_*
 *.mp4
 *.pyc
 ./model_ours/checkpoints/*/*
+*.mat
+*.zip
