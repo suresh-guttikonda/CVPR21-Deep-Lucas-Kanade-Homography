@@ -136,16 +136,21 @@ class DLK_Homography(object):
         self.level_three_template.load_weights(load_path_three  + 'epoch_'+str(input_parameters.epoch_load_three)+"template_full")
 
         # networks for lukas kanade estimation
+        # self.LK_layer_one=Lucas_Kanade_layer(batch_size=1,height_template=324,width_template=432,num_channels=1)
+        # self.LK_layer_two=Lucas_Kanade_layer(batch_size=1,height_template=162,width_template=216,num_channels=1)
+        # self.LK_layer_three=Lucas_Kanade_layer(batch_size=1,height_template=81,width_template=108,num_channels=1)
+        # self.LK_layer_regression=Lucas_Kanade_layer(batch_size=1,height_template=324,width_template=432,num_channels=3)
         self.LK_layer_one=Lucas_Kanade_layer(batch_size=1,height_template=128,width_template=128,num_channels=1)
         self.LK_layer_two=Lucas_Kanade_layer(batch_size=1,height_template=64,width_template=64,num_channels=1)
         self.LK_layer_three=Lucas_Kanade_layer(batch_size=1,height_template=32,width_template=32,num_channels=1)
-
         self.LK_layer_regression=Lucas_Kanade_layer(batch_size=1,height_template=192,width_template=192,num_channels=3)
+
 
         # data set
         if input_parameters.dataset_name=='GoogleEarth':
             self.data_loader_caller=data_loader_GoogleEarth('val')
             # self.data_loader_caller=data_loader_Akagi('val')
+            # self.data_loader_caller=data_loader_Manual()
 
     def average_cornner_error(self, batch_size,predicted_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127):
 
@@ -223,7 +228,7 @@ class DLK_Homography(object):
 
         return  tf.expand_dims(mimic_ratio,axis=-1)
 
-    def get_initial_matrix(self, input_img, template_img, u_list,v_list, initial_type='multi_net'):
+    def get_initial_matrix(self, input_img, template_img, initial_type='multi_net'):
 
         if initial_type=='multi_net':
             input_img_grey=tf.image.rgb_to_grayscale(input_img)
@@ -252,10 +257,7 @@ class DLK_Homography(object):
             initial_matrix=np.dot(initial_matrix[0,:,:], np.linalg.inv(matrix_two[0,:,:]))
             matrix_three=initial_matrix=np.expand_dims(initial_matrix,axis=0)
 
-            cornner_error_pre, u_predict_pre, v_predict_pre=self.average_cornner_error(1,initial_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
-            initial_matrix=self.construct_matrix(initial_matrix,scale_factor=0.25,batch_size=1)
-
-        return initial_matrix, u_predict_pre, v_predict_pre
+        return initial_matrix
 
     def get_dlk_feature_map(self, input_img, template_img, feature_map_type='special'):
 
@@ -351,15 +353,19 @@ class DLK_Homography(object):
             if len(np.shape(input_img))<2:
                 break
 
+            cv.imwrite(f'template_img{iters}.png', template_img[0] * 255)
+
             input_img_disp = input_img[0] * 255
             # gt box
             input_img_disp = self.draw_box(input_img_disp.copy(), u_list[0], v_list[0], color=(0, 255, 255), thickness=2)
 
-            initial_matrix, u_predict_pre, v_predict_pre= self.get_initial_matrix(input_img, template_img, u_list,v_list, self.input_parameters.initial_type)
+            initial_matrix = self.get_initial_matrix(input_img, template_img, self.input_parameters.initial_type)
+            cornner_error_pre, u_predict_pre, v_predict_pre=self.average_cornner_error(1,initial_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
+            initial_matrix=self.construct_matrix(initial_matrix,scale_factor=0.25,batch_size=1)
 
             # est box
             input_img_disp_pre = self.draw_box(input_img_disp.copy(), u_predict_pre[0], v_predict_pre[0], color=(0, 0, 255), thickness=2)
-            cv.imwrite('input_img_disp_pre.png', input_img_disp_pre)
+            cv.imwrite(f'input_img_disp_pre_{iters}.png', input_img_disp_pre)
 
             feature_maps_one, feature_maps_two, feature_maps_three = self.get_dlk_feature_map(input_img, template_img, self.input_parameters.feature_map_type)
 
@@ -367,11 +373,45 @@ class DLK_Homography(object):
                 feature_maps = [feature_maps_one, feature_maps_two, feature_maps_three]
                 predicted_matrix = self.dlk_estimation(initial_matrix, feature_maps, u_list, v_list)
                 cornner_error, u_predict, v_predict=self.average_cornner_error(1,predicted_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
+                print(f'{iters} pre: {cornner_error_pre}, final: {cornner_error}')
 
                 # est box
                 input_img_disp_final = self.draw_box(input_img_disp.copy(), u_predict[0], v_predict[0], color=(0, 0, 255), thickness=2)
-                cv.imwrite('input_img_disp_final.png', input_img_disp_final)
+                cv.imwrite(f'input_img_disp_final_{iters}.png', input_img_disp_final)
+
+                template_img_new=self.LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), np.linalg.inv(predicted_matrix))
+                cv.imwrite(f'template_img_reg{iters}.png', template_img_new[0].numpy() * 255)
             print('saved')
+
+    def test_manual(self):
+        input_img,template_img=self.data_loader_caller.data_read_batch(batch_size=1)
+
+        initial_matrix = tf.eye(3, batch_shape=[1])
+        feature_maps_one, feature_maps_two, feature_maps_three = self.get_dlk_feature_map(input_img, template_img, self.input_parameters.feature_map_type)
+
+        input_feature_map_one, template_feature_map_one = feature_maps_one
+        input_feature_map_two, template_feature_map_two = feature_maps_two
+        input_feature_map_three, template_feature_map_three = feature_maps_three
+
+        template_img_new=self.LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), initial_matrix)
+        plt.imsave(f'before.png', template_img_new[0].numpy()*255.)
+
+        updated_matrix = initial_matrix
+        updated_matrix=self.construct_matrix(updated_matrix,scale_factor=0.25,batch_size=1)
+        for _ in range(30):
+            updated_matrix=self.LK_layer_three.update_matrix(template_feature_map_three,input_feature_map_three,updated_matrix)
+
+        updated_matrix=self.construct_matrix(updated_matrix,scale_factor=2.0,batch_size=1)
+        for _ in range(30):
+            updated_matrix=self.LK_layer_two.update_matrix(template_feature_map_two,input_feature_map_two,updated_matrix)
+
+        updated_matrix=self.construct_matrix(updated_matrix,scale_factor=2.0,batch_size=1)
+        for _ in range(30):
+            updated_matrix=self.LK_layer_one.update_matrix(template_feature_map_one,input_feature_map_one,updated_matrix)
+
+        template_img_new=self.LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), initial_matrix)
+        plt.imsave(f'after.png', template_img_new[0].numpy()*255.)
+
 
 if __name__ == '__main__':
     input_parameters = parse_args()

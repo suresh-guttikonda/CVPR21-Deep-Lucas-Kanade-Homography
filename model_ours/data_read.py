@@ -273,6 +273,38 @@ class data_loader_Akagi():
 
     return np.asarray(input_all).astype(np.float32),np.asarray(label_u).astype(np.float32),np.asarray(label_v).astype(np.float32),np.asarray(template_all).astype(np.float32)
 
+class data_loader_Manual():
+
+  def __init__(self):
+    self.img_path=glob.glob('../Dataset/Manual/input/*')
+    self.input_path='../Dataset/Manual/input/'
+    self.template_path='../Dataset/Manual/template/'
+
+    print (len(self.img_path))
+    self.start=0
+
+  def data_read_batch(self,batch_size=8):
+    input_all=[]
+    template_all=[]
+    for i in range(batch_size):
+
+      img_name=self.img_path[self.start].split('/')[-1]
+
+      self.start=self.start+1
+      if self.start>(len(self.img_path)-1):
+        input_all=[0]
+        template_all=[1]
+        break
+
+      input_img=plt.imread(self.input_path+img_name)/255.0
+      template_img=plt.imread(self.template_path+img_name)/255.0
+
+      input_all.append(input_img)
+      template_all.append(template_img)
+
+    return np.asarray(input_all).astype(np.float32),np.asarray(template_all).astype(np.float32)
+
+
 class data_loader_DayNight():
 
   def __init__(self,dataset_name='train'):
