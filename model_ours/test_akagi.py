@@ -10,7 +10,7 @@ import tensorflow as tf
 import time
 import argparse
 import os
-import cv2 as cv
+import cv2
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -175,6 +175,25 @@ class DLK_Homography(object):
         average_conner=tf.reduce_mean(tf.sqrt(tf.math.pow(u_predict-u_list,2)+tf.math.pow(v_predict-v_list,2)))
 
         return average_conner, u_predict, v_predict
+
+    def gt_homography(self,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127):
+        dst_pts = np.array([
+            [int(u_list[0][0]), int(v_list[0][0])],
+            [int(u_list[0][1]), int(v_list[0][1])],
+            [int(u_list[0][2]), int(v_list[0][2])],
+            [int(u_list[0][3]), int(v_list[0][3])],
+        ], np.int)
+        src_pts = np.array([
+            [top_left_u,top_left_v],
+            [bottom_right_u,top_left_v],
+            [bottom_right_u,bottom_right_v],
+            [top_left_u,bottom_right_v]
+        ], np.int)
+        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC,5.0)
+
+        M = tf.matmul(tf.eye(3, batch_shape=[1]), np.expand_dims(M,axis=0))
+
+        return M
 
     def construct_matrix(self, initial_matrix,scale_factor,batch_size):
         #scale_factor size_now/(size to get matrix)
@@ -357,7 +376,7 @@ class DLK_Homography(object):
                 break
 
             template_img_disp=tf.image.pad_to_bounding_box(template_img, 32, 32, 192, 192)
-            cv.imwrite(f'out/template_img{iters}.png', template_img_disp[0].numpy() * 255)
+            cv2.imwrite(f'out/template_img{iters}.png', template_img_disp[0].numpy() * 255)
 
             input_img_disp = input_img[0] * 255
             # gt box
@@ -369,11 +388,11 @@ class DLK_Homography(object):
 
             # est box
             input_img_disp_pre = self.draw_box(input_img_disp.copy(), u_predict_pre[0], v_predict_pre[0], color=(0, 255, 255), thickness=2)
-            cv.imwrite(f'out/input_img_disp_pre_{iters}.png', input_img_disp_pre)
+            cv2.imwrite(f'out/input_img_disp_pre_{iters}.png', input_img_disp_pre)
 
             feature_maps_one, feature_maps_two, feature_maps_three = self.get_dlk_feature_map(input_img, template_img, self.input_parameters.feature_map_type)
-            cv.imwrite(f'out/input_feature_map_one{iters}.png', feature_maps_one[0][0].numpy() * 255)
-            cv.imwrite(f'out/template_feature_map_one{iters}.png', feature_maps_one[1][0].numpy() * 255)
+            cv2.imwrite(f'out/input_feature_map_one{iters}.png', feature_maps_one[0][0].numpy() * 255)
+            cv2.imwrite(f'out/template_feature_map_one{iters}.png', feature_maps_one[1][0].numpy() * 255)
 
             if self.input_parameters.if_LK:
                 feature_maps = [feature_maps_one, feature_maps_two, feature_maps_three]
@@ -383,10 +402,10 @@ class DLK_Homography(object):
 
                 # est box
                 input_img_disp_final = self.draw_box(input_img_disp.copy(), u_predict[0], v_predict[0], color=(0, 255, 255), thickness=2)
-                cv.imwrite(f'out/input_img_disp_final_{iters}.png', input_img_disp_final)
+                cv2.imwrite(f'out/input_img_disp_final_{iters}.png', input_img_disp_final)
 
                 template_img_new=self.LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), np.linalg.inv(predicted_matrix))
-                cv.imwrite(f'out/template_img_reg{iters}.png', template_img_new[0].numpy() * 255)
+                cv2.imwrite(f'out/template_img_reg{iters}.png', template_img_new[0].numpy() * 255)
             print('saved')
 
     def test_manual(self):
@@ -394,34 +413,39 @@ class DLK_Homography(object):
         for iters in range(3):
             input_img,u_list,v_list,template_img=self.data_loader_caller.data_read_batch(batch_size=1)
 
-        template_img_disp=tf.image.pad_to_bounding_box(template_img, 32, 32, 192, 192)
-        cv.imwrite(f'out/template_img_disp.png', template_img_disp[0].numpy() * 255)
-        cv.imwrite(f'out/input_img_disp.png', input_img[0] * 255)
+        # template_img_disp=tf.image.pad_to_bounding_box(template_img, 32, 32, 192, 192)
+        cv2.imwrite(f'out/template_img_disp.png', template_img[0] * 255)
+        cv2.imwrite(f'out/input_img_disp.png', input_img[0] * 255)
+        gt_matrix = self.gt_homography(u_list,v_list)
+        template_img_new=self.LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), np.linalg.inv(gt_matrix))
+        cv2.imwrite(f'out/gt_transfm.png', template_img_new[0].numpy()*255.)
+
+        initial_matrix = self.get_initial_matrix(input_img, template_img, self.input_parameters.initial_type)
+        cornner_error_pre, u_predict_pre, v_predict_pre=self.average_cornner_error(1,initial_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
 
         # template img 128x128x3 -> initial_guess_img 192x192x3
-        initial_matrix = self.get_initial_matrix(input_img, template_img, self.input_parameters.initial_type)
         template_img_new=self.LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), np.linalg.inv(initial_matrix))
-        cv.imwrite(f'out/before.png', template_img_new[0].numpy()*255.)
+        cv2.imwrite(f'out/init_guess_transfm.png', template_img_new[0].numpy()*255.)
 
         # initial_guess_img 192x192x3 -> template img 128x128x3
         LK_layer = Lucas_Kanade_layer(batch_size=1,height_template=128,width_template=128,num_channels=3)
         template_img_new=LK_layer.projective_inverse_warp(tf.dtypes.cast(template_img_new,tf.float32), initial_matrix)
-        cv.imwrite(f'out/test.png', template_img_new[0].numpy()*255.)
+        cv2.imwrite(f'out/template_img_disp_prime.png', template_img_new[0].numpy()*255.)
 
-        cornner_error_pre, u_predict_pre, v_predict_pre=self.average_cornner_error(1,initial_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
+        # rescale initial_homography matrix
         initial_matrix=self.construct_matrix(initial_matrix,scale_factor=0.25,batch_size=1)
 
         feature_maps_one, feature_maps_two, feature_maps_three = self.get_dlk_feature_map(input_img, template_img, self.input_parameters.feature_map_type)
-
-        cv.imwrite(f'out/input_feature_map_one.png', feature_maps_one[0][0].numpy() * 255)
-        cv.imwrite(f'out/template_feature_map_one.png', feature_maps_one[1][0].numpy() * 255)
+        # cv2.imwrite(f'out/input_feature_map_one.png', feature_maps_one[0][0].numpy() * 255)
+        # cv2.imwrite(f'out/template_feature_map_one.png', feature_maps_one[1][0].numpy() * 255)
 
         feature_maps = [feature_maps_one, feature_maps_two, feature_maps_three]
         predicted_matrix = self.dlk_estimation(initial_matrix, feature_maps, u_list, v_list)
         cornner_error, u_predict, v_predict=self.average_cornner_error(1,predicted_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
+        print(f'initial error: {cornner_error_pre}, final: {cornner_error}')
 
         template_img_new=self.LK_layer_regression.projective_inverse_warp(tf.dtypes.cast(template_img,tf.float32), np.linalg.inv(predicted_matrix))
-        cv.imwrite(f'out/after.png', template_img_new[0].numpy()*255.)
+        cv2.imwrite(f'out/final_transfm.png', template_img_new[0].numpy()*255.)
 
 
 if __name__ == '__main__':
@@ -434,5 +458,5 @@ if __name__ == '__main__':
 
     input_parameters = parse_args()
     model = DLK_Homography(input_parameters)
-    #model.test()
+    # model.test()
     model.test_manual()
