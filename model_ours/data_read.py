@@ -224,10 +224,15 @@ class data_loader_Akagi():
       random.shuffle(self.img_path)
 
     elif dataset_name=='val':
-      self.img_path=glob.glob('../Dataset/AkagiFlight/val2018_input/*')
-      self.input_path='../Dataset/AkagiFlight/val2018_input/'
-      self.label_path='../Dataset/AkagiFlight/val2018_label/'
-      self.template_path='../Dataset/AkagiFlight/val2018_template/'
+      # self.img_path=glob.glob('../Dataset/AkagiFlight/val2018_input/*')
+      # self.input_path='../Dataset/AkagiFlight/val2018_input/'
+      # self.label_path='../Dataset/AkagiFlight/val2018_label/'
+      # self.template_path='../Dataset/AkagiFlight/val2018_template/'
+
+      self.img_path=glob.glob('../Dataset/Fukoshima/val2020_input/*')
+      self.input_path='../Dataset/Fukoshima/val2020_input/'
+      self.label_path='../Dataset/Fukoshima/val2020_label/'
+      self.template_path='../Dataset/Fukoshima/val2020_template/'
 
     else:
       print ("no data load")
