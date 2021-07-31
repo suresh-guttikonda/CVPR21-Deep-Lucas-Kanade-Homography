@@ -16,7 +16,8 @@ from skimage.transform import rescale, resize
 
 
 
-img_path_list=glob.glob('./Google_earth/*_new.jpg')
+#img_path_list=glob.glob('./Google_earth/*_new.jpg')
+img_path_list=['./GoogleEarth/Greater_Boston_2018_0.jpg']
 
 if not (os.path.exists('./train2014_template/')):
   os.mkdir('./train2014_template/')
@@ -42,11 +43,13 @@ for i in img_path_list:
   img_new=plt.imread(i)
   i=i.split('/')[-1]
 
-  
-  img_old=plt.imread('./Google_earth/'+i[:len(i)-8]+'_old_day.jpg')
+
+  #img_old=plt.imread('./Google_earth/'+i[:len(i)-8]+'_old_day.jpg')
+  img_old=plt.imread('./GoogleEarth/'+i[:len(i)-7]+'9_0.jpg')
+
 
   for rand_num in range(400):
-    
+
     center_x=random.randint(output_region+50,4800-output_region-50)
     center_y=random.randint(output_region+50,2860-output_region-50)
 
@@ -118,14 +121,3 @@ for i in img_path_list:
     else:
         with open('./val2014_label/'+str(rand_num)+'_'+i[:len(i)-8]+'_label.txt', 'w') as outfile:
             json.dump(label, outfile)
-
-
-
-
-
-
-
-  
-
-
-

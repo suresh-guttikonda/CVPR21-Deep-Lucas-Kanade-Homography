@@ -217,10 +217,10 @@ class data_loader_Akagi():
 
   def __init__(self,dataset_name='train'):
     if dataset_name=='train':
-      self.img_path=glob.glob('../Dataset/AkagiFlight/train2018_input/*')
-      self.input_path='../Dataset/AkagiFlight/train2018_input/'
-      self.label_path='../Dataset/AkagiFlight/train2018_label/'
-      self.template_path='../Dataset/AkagiFlight/train2018_template/'
+      self.img_path=glob.glob('../Dataset/AkagiEarth/train2014_input/*')
+      self.input_path='../Dataset/AkagiEarth/train2014_input/'
+      self.label_path='../Dataset/AkagiEarth/train2014_label/'
+      self.template_path='../Dataset/AkagiEarth/train2014_template/'
       random.shuffle(self.img_path)
 
     elif dataset_name=='val':
@@ -229,10 +229,10 @@ class data_loader_Akagi():
       # self.label_path='../Dataset/AkagiFlight/val2018_label/'
       # self.template_path='../Dataset/AkagiFlight/val2018_template/'
 
-      self.img_path=glob.glob('../Dataset/Fukoshima/val2020_input/*')
-      self.input_path='../Dataset/Fukoshima/val2020_input/'
-      self.label_path='../Dataset/Fukoshima/val2020_label/'
-      self.template_path='../Dataset/Fukoshima/val2020_template/'
+      self.img_path=glob.glob('../Dataset/AkagiEarth/val2014_input/*')
+      self.input_path='../Dataset/AkagiEarth/val2014_input/'
+      self.label_path='../Dataset/AkagiEarth/val2014_label/'
+      self.template_path='../Dataset/AkagiEarth/val2014_template/'
 
     else:
       print ("no data load")
