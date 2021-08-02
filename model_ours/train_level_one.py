@@ -447,15 +447,19 @@ for current_epoch in range(input_parameters.epoch_num):
 
 
 
-        with summary_writer.as_default():
-            tf.summary.scalar('error_ave_1000', error_ave_1000, step=current_epoch)
-            tf.summary.scalar('ssim_loss_total', ssim_loss_total, step=current_epoch)
-            tf.summary.scalar('convex_loss_total', convex_loss_total, step=current_epoch)
-
-            error_ave_1000=0.0
-            convex_loss_total=0.0
-            ssim_loss_total=0.0
-
+        # if iters%100==0 and iters>0:
+        #
+        #
+        #     print(iters)
+        #     print (save_path)
+        #
+        #     print (error_ave_1000/100)
+        #     print (ssim_loss_total/100)
+        #     print (convex_loss_total/100)
+        #     error_ave_1000=0.0
+        #     convex_loss_total=0.0
+        #     ssim_loss_total=0.0
+        #
         # if iters%input_parameters.save_eval_f==0 and iters>0:
         #
         #     level_one_input.save_weights(save_path +'epoch_'+str(input_parameters.epoch_start+current_epoch)+"input_"+str(iters))
@@ -475,3 +479,8 @@ for current_epoch in range(input_parameters.epoch_num):
         input_warped_to_template_left_2=None
         input_warped_to_template_right_1=None
         input_warped_to_template_right_2=None
+
+    with summary_writer.as_default():
+        tf.summary.scalar('error_ave_1000', error_ave_1000, step=current_epoch)
+        tf.summary.scalar('ssim_loss_total', ssim_loss_total, step=current_epoch)
+        tf.summary.scalar('convex_loss_total', convex_loss_total, step=current_epoch)
