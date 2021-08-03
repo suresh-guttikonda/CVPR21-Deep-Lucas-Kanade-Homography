@@ -21,6 +21,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_name', action="store", dest= "dataset_name",default="GoogleMap",help='MSCOCO,GoogleMap,GoogleEarth,DayNight')
 
 
+
 parser.add_argument('--learning_rate', action="store", dest="learning_rate", type=float, default=0.00001,help='learning_rate')
 
 parser.add_argument('--batch_size', action="store", dest="batch_size", type=int, default=4,help='batch_size')
@@ -326,7 +327,7 @@ LK_layer_three=Lucas_Kanade_layer(batch_size=input_parameters.batch_size,height_
 # Logging
 summaries_flush_secs=10
 summary_writer = tf.compat.v2.summary.create_file_writer(
-    './log/level_one', flush_millis=summaries_flush_secs * 1000)
+    './log/level_three', flush_millis=summaries_flush_secs * 1000)
 
 
 #initial_matrix_scaled=construct_matrix(initial_matrix,scale_factor=0.125,batch_size=input_parameters.batch_size)
@@ -501,15 +502,19 @@ for current_epoch in range(input_parameters.epoch_num):
 
 
 
-        with summary_writer.as_default():
-            tf.summary.scalar('error_ave_1000', error_ave_1000, step=current_epoch)
-            tf.summary.scalar('ssim_loss_total', ssim_loss_total, step=current_epoch)
-            tf.summary.scalar('convex_loss_total', convex_loss_total, step=current_epoch)
-
-            error_ave_1000=0.0
-            convex_loss_total=0.0
-            ssim_loss_total=0.0
-
+        # if iters%100==0 and iters>0:
+        #
+        #
+        #     print(iters)
+        #     print (save_path)
+        #
+        #     print (error_ave_1000/100)
+        #     print (ssim_loss_total/100)
+        #     print (convex_loss_total/100)
+        #     error_ave_1000=0.0
+        #     convex_loss_total=0.0
+        #     ssim_loss_total=0.0
+        #
         # if iters%input_parameters.save_eval_f==0 and iters>0:
         #
         #     level_three_input.save_weights(save_path +'epoch_'+str(input_parameters.epoch_start+current_epoch)+"input_"+str(iters))
@@ -529,3 +534,8 @@ for current_epoch in range(input_parameters.epoch_num):
         input_warped_to_template_left_2=None
         input_warped_to_template_right_1=None
         input_warped_to_template_right_2=None
+
+    with summary_writer.as_default():
+        tf.summary.scalar('error_ave_1000', error_ave_1000, step=current_epoch)
+        tf.summary.scalar('ssim_loss_total', ssim_loss_total, step=current_epoch)
+        tf.summary.scalar('convex_loss_total', convex_loss_total, step=current_epoch)
