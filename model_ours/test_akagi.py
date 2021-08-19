@@ -85,6 +85,7 @@ def parse_args():
     parser.add_argument(
         '--load_epoch_multinet',
         action="store",
+        nargs='*',
         dest="load_epoch_multinet",
         default=[100,100,80],
         help='load_epoch_multinet'
@@ -458,5 +459,5 @@ if __name__ == '__main__':
 
     input_parameters = parse_args()
     model = DLK_Homography(input_parameters)
-    # model.test()
-    model.test_manual()
+    model.test()
+    # model.test_manual()
