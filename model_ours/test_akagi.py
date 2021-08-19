@@ -114,9 +114,9 @@ class DLK_Homography(object):
             self.regression_network_two=Net_second()
             self.regression_network_three=Net_third()
 
-        self.regression_network_one.load_weights(save_path_one + 'epoch_'+str(input_parameters.load_epoch_multinet[0]))
-        self.regression_network_two.load_weights(save_path_two + 'epoch_'+str(input_parameters.load_epoch_multinet[1]))
-        self.regression_network_three.load_weights(save_path_three + 'epoch_'+str(input_parameters.load_epoch_multinet[2]))
+        # self.regression_network_one.load_weights(save_path_one + 'epoch_'+str(input_parameters.load_epoch_multinet[0]))
+        # self.regression_network_two.load_weights(save_path_two + 'epoch_'+str(input_parameters.load_epoch_multinet[1]))
+        # self.regression_network_three.load_weights(save_path_three + 'epoch_'+str(input_parameters.load_epoch_multinet[2]))
 
         # network to extract feature maps
         if input_parameters.feature_map_type=='special':
@@ -320,7 +320,7 @@ class DLK_Homography(object):
             try:
                 updated_matrix=self.LK_layer_three.update_matrix(template_feature_map_three,input_feature_map_three,updated_matrix)
                 updated_matrix_back=self.construct_matrix(updated_matrix,scale_factor=4.0,batch_size=1)
-                cornner_error, _, _=self.average_cornner_error(1,updated_matrix_back,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
+                cornner_error, _, _=self.average_cornner_error(1,updated_matrix_back,u_list,v_list,top_left_u=32,top_left_v=32,bottom_right_u=159,bottom_right_v=159)
                 if np.abs(cornner_error-cornner_error_previous)<1.0:
                     break
                 cornner_error_previous=cornner_error
@@ -334,7 +334,7 @@ class DLK_Homography(object):
             try:
                 updated_matrix=self.LK_layer_two.update_matrix(template_feature_map_two,input_feature_map_two,updated_matrix)
                 updated_matrix_back=self.construct_matrix(updated_matrix,scale_factor=2.0,batch_size=1)
-                cornner_error, _, _=self.average_cornner_error(1,updated_matrix_back,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
+                cornner_error, _, _=self.average_cornner_error(1,updated_matrix_back,u_list,v_list,top_left_u=32,top_left_v=32,bottom_right_u=159,bottom_right_v=159)
                 if np.abs(cornner_error-cornner_error_previous)<0.1:
                     break
                 cornner_error_previous=cornner_error
@@ -346,7 +346,7 @@ class DLK_Homography(object):
         for j in range(fk_loop):
             try:
                 updated_matrix=self.LK_layer_one.update_matrix(template_feature_map_one,input_feature_map_one,updated_matrix)
-                cornner_error, _, _=self.average_cornner_error(1,updated_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
+                cornner_error, _, _=self.average_cornner_error(1,updated_matrix,u_list,v_list,top_left_u=32,top_left_v=32,bottom_right_u=159,bottom_right_v=159)
                 if np.abs(cornner_error-cornner_error_previous)<0.01:
                     break
                 cornner_error_previous=cornner_error
@@ -370,7 +370,7 @@ class DLK_Homography(object):
 
     def test(self):
 
-        for iters in range(5):
+        for iters in range(1):
             input_img,u_list,v_list,template_img=self.data_loader_caller.data_read_batch(batch_size=1)
 
             if len(np.shape(input_img))<2:
@@ -383,13 +383,19 @@ class DLK_Homography(object):
             # gt box
             input_img_disp = self.draw_box(input_img_disp.copy(), u_list[0], v_list[0], color=(0, 0, 255), thickness=2)
 
-            initial_matrix = self.get_initial_matrix(input_img, template_img, self.input_parameters.initial_type)
-            cornner_error_pre, u_predict_pre, v_predict_pre=self.average_cornner_error(1,initial_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
-            initial_matrix=self.construct_matrix(initial_matrix,scale_factor=0.25,batch_size=1)
+            initial_matrix = np.eye(3)
+            initial_matrix = np.array([
+                [1.06053927388232, -0.0164351325439244, 3.],
+                [0.0641066403871330, 0.774118491211950, 7.],
+                [0.000484229806807179, -0.000407857261214910, 1.]])
+            # initial_matrix = self.get_initial_matrix(input_img, template_img, self.input_parameters.initial_type)
+            cornner_error_pre, u_predict_pre, v_predict_pre=self.average_cornner_error(1,initial_matrix,u_list,v_list,top_left_u=32,top_left_v=32,bottom_right_u=159,bottom_right_v=159)
+            # initial_matrix=self.construct_matrix(initial_matrix,scale_factor=0.25,batch_size=1)
+            print('initial_matrix-------------------')
 
             # est box
             input_img_disp_pre = self.draw_box(input_img_disp.copy(), u_predict_pre[0], v_predict_pre[0], color=(0, 255, 255), thickness=2)
-            cv2.imwrite(f'out/input_img_disp_pre_{iters}.png', input_img_disp_pre)
+            cv2.imwrite(f'out/input_img_disp_init_{iters}.png', input_img_disp_pre)
 
             feature_maps_one, feature_maps_two, feature_maps_three = self.get_dlk_feature_map(input_img, template_img, self.input_parameters.feature_map_type)
             cv2.imwrite(f'out/input_feature_map_one{iters}.png', feature_maps_one[0][0].numpy() * 255)
@@ -398,8 +404,8 @@ class DLK_Homography(object):
             if self.input_parameters.if_LK:
                 feature_maps = [feature_maps_one, feature_maps_two, feature_maps_three]
                 predicted_matrix = self.dlk_estimation(initial_matrix, feature_maps, u_list, v_list)
-                cornner_error, u_predict, v_predict=self.average_cornner_error(1,predicted_matrix,u_list,v_list,top_left_u=0,top_left_v=0,bottom_right_u=127,bottom_right_v=127)
-                print(f'{iters} pre: {cornner_error_pre}, final: {cornner_error}')
+                cornner_error, u_predict, v_predict=self.average_cornner_error(1,predicted_matrix,u_list,v_list,top_left_u=32,top_left_v=32,bottom_right_u=159,bottom_right_v=159)
+                print(f'initial error: {cornner_error_pre}, final error(after LK): {cornner_error}')
 
                 # est box
                 input_img_disp_final = self.draw_box(input_img_disp.copy(), u_predict[0], v_predict[0], color=(0, 255, 255), thickness=2)
