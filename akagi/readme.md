@@ -8,3 +8,5 @@
 2. Using the gt homography we find the corresponding points of original uav image(tgt_points) [[32 32];[159 32];[32 159]; [159 159]], these corner points are fixed as per DLK paper, in satellite image/registered uav image (src_points). <img src="images/original_uav.png" width="384" height="256" description="Original UAV Image with tgt_points"/> <img src="images/sat_registered_uav.png" width="512" height="256" description="Satellite + Registered UAV Image with corresponding src_points"/>
 3. The computed src_points will be used as supervised label for DLK method.
 4. Repeat process with different image pair
+5. Sample DLK method's input and final ouput. \
+<img src="images/DLK_input.png" description="DLK method input"/> <img src="images/DLK_output.png" description="DLK method output"/>
